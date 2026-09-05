@@ -308,6 +308,14 @@
     $('saveNote').className = 'hint';
   });
 
+  // Opened from the generator in a new tab, "back" means closing this tab - the generator is
+  // still sitting there with everything typed in. Opened directly, it stays an ordinary link.
+  if (window.opener) {
+    Array.prototype.forEach.call(document.querySelectorAll('a[href="index.html"]'), function (link) {
+      link.addEventListener('click', function (e) { e.preventDefault(); window.close(); });
+    });
+  }
+
   initLanguage();
   applyStyle(window.QR_STYLE.load());
   applyLanguage();

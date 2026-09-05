@@ -198,7 +198,14 @@
     .print-sheet { display: block; color: #000; font-size: 12pt; }
     .print-sheet h1 { font-size: 18pt; margin: 0 0 4pt; }
     .print-sheet h2 { font-size: 12pt; margin: 16pt 0 6pt; }
-    .print-sheet img { width: 62mm; height: 62mm; border: 1px solid #999; }
+    .print-sheet img { width: 62mm; height: 62mm; border: 1px solid #999; flex: none; }
+    /* The code and what it was set up for belong side by side: whoever holds the sheet reads
+       the summary and the code in one glance, and the steps get the rest of the page. */
+    .print-sheet .print-head { display: flex; gap: 10mm; align-items: flex-start; }
+    .print-sheet .print-head__summary { flex: 1 1 auto; }
+    .print-sheet .print-head h2 { margin-top: 0; }
+    .print-sheet .print-head table { margin-top: 0; }
+    .print-sheet--bare .print-head__summary { display: none; }
     .print-sheet ol { padding-left: 16pt; }
     .print-sheet li { margin-bottom: 10pt; }
     .print-sheet li strong { display: block; margin-bottom: 2pt; }
@@ -255,6 +262,9 @@
 
     <div class="inline-row" style="margin-top:14px;">
       <button class="btn btn--sm" id="loadConfigBtn" data-i18n="loadConfig"></button>
+      <!-- New tab on purpose: leaving this page would drop everything typed so far, and the
+           generator picks the new appearance up on its own when this tab is looked at again. -->
+      <a class="btn btn--sm" href="customize.html" target="_blank" rel="noopener" data-i18n="customLink"></a>
       <span class="hint" id="configHint" style="margin:0;"></span>
     </div>
     <input type="file" id="configFile" accept="application/json,.json" hidden>
@@ -331,6 +341,10 @@
             <span class="hint" style="margin:0;" data-i18n="authTokenDesc"></span>
             <span class="hint" style="margin:0;" data-i18n="tokenOneTime"></span></span>
           </label>
+          <label class="checkbox"><input type="radio" name="ws1Auth" value="none">
+            <span><strong data-i18n="authNone"></strong><br>
+            <span class="hint" style="margin:0;" data-i18n="authNoneDesc"></span></span>
+          </label>
         </div>
 
         <div style="margin-top:14px;">
@@ -342,7 +356,7 @@
           <p class="hint" id="urlHint"></p>
         </div>
 
-        <div class="grid2" style="margin-top:14px;">
+        <div class="grid2" style="margin-top:14px;" id="ws1Credentials">
           <label class="field"><span data-i18n="serverLabel"></span>
             <input type="text" id="serverUrl" placeholder="ds1234.awmdm.com" autocomplete="off">
           </label>
@@ -361,7 +375,7 @@
         </div>
         <p class="hint" id="credentialsHint"></p>
 
-        <div style="margin-top:12px; display:flex; flex-direction:column; gap:8px;">
+        <div style="margin-top:12px; display:flex; flex-direction:column; gap:8px;" id="ws1AuthFlags">
           <label class="checkbox"><input type="checkbox" id="useUemAuth" checked> <span data-i18n="useUemAuth"></span></label>
           <label class="checkbox"><input type="checkbox" id="thirdPartyCookies"> <span data-i18n="thirdPartyCookies"></span></label>
         </div>
@@ -425,8 +439,10 @@
           <button class="btn btn--primary" id="downloadBtn" disabled data-i18n="downloadPng"></button>
           <button class="btn" id="printBtn" disabled data-i18n="printPdf"></button>
           <button class="btn" id="saveConfigBtn" data-i18n="saveConfig"></button>
-          <a class="btn" href="customize.html" data-i18n="customLink"></a>
         </div>
+        <label class="checkbox" style="justify-content:center; margin-top:10px;">
+          <input type="checkbox" id="printSummaryOn" checked> <span data-i18n="printSummaryToggle"></span>
+        </label>
         <p class="hint" style="text-align:center;" data-i18n="scanHint"></p>
       </div>
       </section>
@@ -521,11 +537,15 @@
 <div class="print-sheet" id="printSheet">
   <h1>Android device enrollment</h1>
   <p id="printIntro"></p>
-  <img id="printQr" alt="Enrollment QR code">
-  <h2>Steps</h2>
+  <div class="print-head">
+    <div class="print-head__summary">
+      <h2 id="printSummaryHeading">This code is set up for</h2>
+      <table id="printSummary"></table>
+    </div>
+    <img id="printQr" alt="Enrollment QR code">
+  </div>
+  <h2 id="printStepsHeading">Steps</h2>
   <ol id="printSteps"></ol>
-  <h2>This code is set up for</h2>
-  <table id="printSummary"></table>
   <p class="warn" id="printWarning"></p>
   <p class="foot" id="printFoot"></p>
 </div>
@@ -570,7 +590,8 @@
   var FIELDS = ['serverUrl', 'groupId', 'username', 'password', 'enrollmentToken', 'amapiJson',
     'wifiSsid', 'wifiPassword', 'wifiSecurity', 'wifiMode', 'wifiProxyHost', 'wifiProxyPort',
     'wifiProxyBypass', 'wifiPacUrl', 'locale', 'timeZone'];
-  var FLAGS = ['useUemAuth', 'thirdPartyCookies', 'leaveSystemApps', 'skipEncryption', 'wifiHidden'];
+  var FLAGS = ['useUemAuth', 'thirdPartyCookies', 'leaveSystemApps', 'skipEncryption', 'wifiHidden',
+    'printSummaryOn'];
 
   function fillList(listId, items) {
     var frag = document.createDocumentFragment();
@@ -717,6 +738,9 @@
         $('amapiJson').value = JSON.stringify(payload, null, 2);
       } else {
         document.querySelector('input[name="mode"][value="ws1"]').checked = true;
+        if (bundle.serverurl && ws1Auth() === 'none') {
+          document.querySelector('input[name="ws1Auth"][value="credentials"]').checked = true;
+        }
         if (bundle.serverurl) { $('serverUrl').value = bundle.serverurl; }
         if (bundle.gid) { $('groupId').value = bundle.gid; }
         if (bundle.un) { $('username').value = bundle.un; }
@@ -780,6 +804,15 @@
         'android.app.extra.PROVISIONING_ADMIN_EXTRAS_BUNDLE': {}
       };
       payload['android.app.extra.PROVISIONING_ADMIN_EXTRAS_BUNDLE'][AMAPI.tokenKey] = token;
+    } else if (ws1Auth() === 'none') {
+      // Hub only: no admin extras bundle at all. An empty bundle is not the same thing - the Hub
+      // treats the keys it finds as configuration, and the point here is that it finds none and
+      // asks on the device instead.
+      payload = {
+        'android.app.extra.PROVISIONING_DEVICE_ADMIN_COMPONENT_NAME': WS1.component,
+        'android.app.extra.PROVISIONING_DEVICE_ADMIN_SIGNATURE_CHECKSUM': WS1.checksum,
+        'android.app.extra.PROVISIONING_DEVICE_ADMIN_PACKAGE_DOWNLOAD_LOCATION': WS1.download
+      };
     } else {
       var server = trimmed('serverUrl');
       var gid = trimmed('groupId');
@@ -981,9 +1014,14 @@
     $('modeCardAmapi').classList.toggle('mode--on', isAmapi);
 
     var byToken = ws1Auth() === 'token';
+    // The third variant sends no connection details at all, so the fields for them have no
+    // reason to be on screen - they would only invite someone to fill in what is not used.
+    var noDetails = ws1Auth() === 'none';
+    $('ws1Credentials').hidden = noDetails;
+    $('ws1AuthFlags').hidden = noDetails;
     $('gidLabel').textContent = byToken ? t('gidLabelToken') : t('gidLabel');
     $('groupId').placeholder = byToken ? '' : 'MY_OG';
-    $('credentialsHint').textContent = byToken ? t('hintToken') : t('hintCredentials');
+    $('credentialsHint').textContent = noDetails ? t('hintNone') : (byToken ? t('hintToken') : t('hintCredentials'));
 
     var byJson = amapiInput() === 'json';
     $('amapiTokenBox').hidden = byJson;
@@ -1007,8 +1045,11 @@
     var current = $('qrCanvas').toDataURL('image/png');
     if ($('printQr').src !== current) { $('printQr').src = current; }
     document.querySelector('.print-sheet h1').textContent = t('pTitle');
-    document.querySelectorAll('.print-sheet h2')[0].textContent = t('pStepsHeading');
-    document.querySelectorAll('.print-sheet h2')[1].textContent = t('pSummaryHeading');
+    $('printStepsHeading').textContent = t('pStepsHeading');
+    $('printSummaryHeading').textContent = t('pSummaryHeading');
+    // A sheet that goes to an outside installer often should not list the server, the group
+    // and the account - the code alone is enough for the scan.
+    $('printSheet').classList.toggle('print-sheet--bare', !$('printSummaryOn').checked);
     $('printFoot').textContent = t('pFooter');
 
     $('printIntro').textContent = isAmapi ? t('pIntroAmapi') : t('pIntroWs1');
@@ -1033,16 +1074,18 @@
     if (isAmapi) {
       rows.push([t('pRowEnrollment'), 'Android Management API']);
     } else {
-      rows.push([t('pRowServer'), trimmed('serverUrl') || '—']);
-      rows.push([ws1Auth() === 'token' ? t('pRowToken') : t('pRowGroup'), trimmed('groupId') || '—']);
-      if (trimmed('username')) { rows.push([t('pRowUsername'), trimmed('username')]); }
+      rows.push([t('pRowServer'), ws1Auth() === 'none' ? t('pOnDevice') : (trimmed('serverUrl') || '—')]);
+      if (ws1Auth() !== 'none') {
+        rows.push([ws1Auth() === 'token' ? t('pRowToken') : t('pRowGroup'), trimmed('groupId') || '—']);
+        if (trimmed('username')) { rows.push([t('pRowUsername'), trimmed('username')]); }
+      }
     }
     rows.push([t('pRowWifi'), wifiInQr
       ? (trimmed('wifiSsid') || '—') + ' (' + t('pWifiInCode') + ')'
       : t('pWifiOnDevice')]);
     // Passwords are never printed in the clear - the sheet is carried around and left lying on
     // desks. A masked row still answers the question the reader actually has: was one set?
-    if (!isAmapi && trimmed('password')) { rows.push([t('pRowPassword'), '•••••••• (' + t('pMasked') + ')']); }
+    if (!isAmapi && ws1Auth() !== 'none' && trimmed('password')) { rows.push([t('pRowPassword'), '•••••••• (' + t('pMasked') + ')']); }
     if (wifiInQr && trimmed('wifiPassword')) { rows.push([t('pRowWifiPassword'), '•••••••• (' + t('pMasked') + ')']); }
     if (trimmed('locale')) { rows.push([t('pRowLocale'), trimmed('locale')]); }
     if (trimmed('timeZone')) { rows.push([t('pRowTimeZone'), trimmed('timeZone')]); }
@@ -1053,8 +1096,8 @@
 
     var secrets = [];
     if (wifiInQr && $('wifiSecurity').value !== 'NONE') { secrets.push(t('pWarnWifi')); }
-    if (!isAmapi && trimmed('password')) { secrets.push(t('pWarnPassword')); }
-    if (isAmapi || ws1Auth() === 'token') { secrets.push(t('pWarnToken')); }
+    if (!isAmapi && ws1Auth() === 'credentials' && trimmed('password')) { secrets.push(t('pWarnPassword')); }
+    if (isAmapi || (!isAmapi && ws1Auth() === 'token')) { secrets.push(t('pWarnToken')); }
 
     // Joined with the language's own word for "and" - three items read as "a, b and c".
     var items = secrets.length > 1
@@ -1267,7 +1310,7 @@
       }
     }
 
-    if (index === 3 && mode() !== 'amapi') {
+    if (index === 3 && mode() !== 'amapi' && ws1Auth() !== 'none') {
       if (!trimmed('serverUrl') || !trimmed('groupId')) {
         return { field: !trimmed('serverUrl') ? 'serverUrl' : 'groupId', message: t('errServer') };
       }

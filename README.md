@@ -10,7 +10,7 @@ disk and open it offline.
 ## What it generates
 
 **Workspace ONE UEM (custom DPC)** — Device Services address, Group ID and an optional
-staging account. Two ways to identify the device:
+staging account. Three ways to identify the device:
 
 - **Group ID with username and password.** Leave the credentials empty and the device asks
   for them during enrollment.
@@ -18,6 +18,9 @@ staging account. Two ways to identify the device:
   can still travel with it, and leaving the password out is the safer choice — a QR code gets
   printed, photographed and passed around, and everything inside it is readable by whoever
   holds it.
+- **No server address and no Group ID.** The code carries the Intelligent Hub download and
+  nothing else; the Hub asks for the server and the group on the device. For fleets where
+  those values differ from device to device.
 
 **Read an existing QR code** — a console shows the enrollment code on screen rather than as a
 link you can copy, so hand it the code itself: drop an image, pick a file, or paste a
@@ -54,10 +57,11 @@ settings, when a site genuinely needs it.
   (colour, logo and its size) together, so the same file on another machine produces the same
   code
 - **Printable instruction sheet** with the code, the steps and a summary of what the code
-  contains — the browser's own "Save as PDF" turns it into a PDF, with no PDF library involved
-- **Five languages** — English, Polish, German, French and Czech, detected from the browser
-  and overridable with the selector. Reference sections stay in English on purpose: they quote
-  API key names that are English anyway
+  contains, printed beside the code and switchable off for sheets that leave the building —
+  the browser's own "Save as PDF" turns it into a PDF, with no PDF library involved
+- **Eight languages** — English, Polish, German, French, Czech, Spanish, Chinese and Japanese,
+  detected from the browser and overridable with the selector. Reference sections stay in
+  English on purpose: they quote API key names that are English anyway
 
 ## Privacy
 
@@ -73,7 +77,7 @@ HTML file. That is the whole installation, and it works with no network connecti
 
 The idea comes from [ws1-android-qr-helper](https://wssyd.github.io/ws1-android-qr-helper/),
 which does the same job for Workspace ONE. This one adds Android Management API tokens, leaves
-WiFi to the device by default, reads enrollment links, prints instructions and speaks five
+WiFi to the device by default, reads enrollment links, prints instructions and speaks eight
 languages.
 
 QR rendering by [node-qrcode](https://github.com/soldair/node-qrcode) (MIT), bundled with the
