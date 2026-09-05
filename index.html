@@ -38,7 +38,13 @@
   .topbar { display: flex; gap: 20px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
   .brand { display: flex; gap: 12px; align-items: flex-start; }
   .brand img { width: 44px; height: 44px; border-radius: 8px; flex: none; }
+
+  /* Same type scale and the same palette tokens as every other card - the intro only stands
+     out by where it sits, not by inventing its own sizes and colours. */
   .intro { border-left: 3px solid var(--accent); }
+  .intro p { margin: 0 0 10px; font-size: 13.5px; color: var(--muted); }
+  .intro p:first-of-type { font-size: 14px; color: var(--ink); }
+  .intro p:last-child { margin-bottom: 0; }
   .topbar h1 { margin: 0 0 6px; font-size: 23px; }
   .topbar p { margin: 0; color: var(--muted); font-size: 14px; max-width: 780px; }
   .lang { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
@@ -86,6 +92,9 @@
   .wizard-nav__count { font-size: 12.5px; color: var(--muted); }
 
   .columns { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 18px; align-items: start; }
+  /* Until the last step there is no QR panel, so the form takes the full width instead of
+     leaving a 330 px hole next to itself. */
+  .columns--solo { grid-template-columns: minmax(0, 1fr); }
   @media (max-width: 900px) { .columns { grid-template-columns: minmax(0, 1fr); } }
 
   .flow { display: flex; flex-direction: column; gap: 18px; }
@@ -153,6 +162,9 @@
   .en-only { font-size: 12px; color: var(--muted); font-style: italic; }
 
   footer { font-size: 13px; color: var(--muted); text-align: center; padding-top: 4px; }
+  footer p { margin: 0 0 6px; }
+  footer p:first-child { font-size: 13.5px; color: var(--ink); }
+  footer p:last-child { margin-bottom: 0; }
   a { color: var(--accent); }
 
   /* Printable instruction sheet - hidden on screen, the only thing printed on paper.
@@ -195,18 +207,11 @@
 
   <section class="card intro">
     <h2 data-i18n="aboutTitle"></h2>
-    <p data-i18n="aboutLead" style="margin:0 0 10px; font-size:14px;"></p>
-    <p data-i18n="aboutPrivacy" style="margin:0 0 10px; font-size:14px;"></p>
-    <p style="margin:0 0 10px; font-size:14px;">
+    <p data-i18n="aboutLead"></p>
+    <p data-i18n="aboutPrivacy"></p>
+    <p>
       <span data-i18n="aboutProduct"></span>
       <a href="https://github.com/franekSoftSF/WS1QRGen" rel="noopener">WSO QR</a>.
-    </p>
-    <p style="margin:0; font-size:14px;">
-      <span data-i18n="aboutContact"></span>
-      <a href="https://www.linkedin.com/in/szymon-frankiewicz-8ba881106/" rel="noopener">Szymon Frankiewicz</a>
-      ·
-      <a href="https://community.omnissa.com/" rel="noopener">Omnissa Community</a>
-      · <strong>#WeAreOmnissa</strong>
     </p>
   </section>
 
@@ -224,9 +229,15 @@
         <span><strong data-i18n="amapiTitle"></strong><span data-i18n="amapiDesc"></span></span>
       </label>
     </div>
+
+    <div class="inline-row" style="margin-top:14px;">
+      <button class="btn btn--sm" id="loadConfigBtn" data-i18n="loadConfig"></button>
+      <span class="hint" id="configHint" style="margin:0;"></span>
+    </div>
+    <input type="file" id="configFile" accept="application/json,.json" hidden>
   </section>
 
-  <div class="columns">
+  <div class="columns" id="columns">
     <div class="flow">
 
       <section class="card" id="ws1Section" data-step="2">
@@ -438,7 +449,7 @@
 
     </div>
 
-    <aside class="card">
+    <aside class="card" id="qrPanel" hidden>
       <h2 data-i18n="qrHeading"></h2>
       <div class="qr-box">
         <canvas id="qrCanvas" hidden></canvas>
@@ -447,26 +458,25 @@
           <button class="btn btn--primary" id="downloadBtn" disabled data-i18n="downloadPng"></button>
           <button class="btn" id="printBtn" disabled data-i18n="printPdf"></button>
           <button class="btn" id="saveConfigBtn" data-i18n="saveConfig"></button>
-          <button class="btn" id="loadConfigBtn" data-i18n="loadConfig"></button>
-          <input type="file" id="configFile" accept="application/json,.json" hidden>
         </div>
-        <p class="hint" id="configHint" style="text-align:center;" data-i18n="scanHint"></p>
+        <p class="hint" style="text-align:center;" data-i18n="scanHint"></p>
       </div>
     </aside>
   </div>
 
   <footer>
-    <p style="margin:0 0 6px;">
+    <p>
+      <span data-i18n="aboutContact"></span>
       <a href="https://www.linkedin.com/in/szymon-frankiewicz-8ba881106/" rel="noopener">Szymon Frankiewicz</a>
       ·
       <a href="https://community.omnissa.com/" rel="noopener">Omnissa Community</a>
       · <strong>#WeAreOmnissa</strong>
     </p>
-    <p style="margin:0 0 6px;">
+    <p>
       <a href="https://github.com/franekSoftSF/WS1QRGen" rel="noopener">WSO QR</a> —
       bulk Android enrollment, day-2 device actions and migration between UEM consoles.
     </p>
-    <p style="margin:0;">
+    <p>
       Inspired by <a href="https://wssyd.github.io/ws1-android-qr-helper/" rel="noopener">ws1-android-qr-helper</a>.
       QR rendering by <a href="https://github.com/soldair/node-qrcode" rel="noopener">node-qrcode</a> (MIT), bundled with this page.
       Apache 2.0 · <a href="https://github.com/franekSoftSF/WSOQRGenerator" rel="noopener">source</a>
@@ -1047,8 +1057,15 @@
       el.hidden = !belongs || wrongMethod;
     });
 
+    // The QR panel belongs to the last step: before that there is nothing to show but greyed
+    // out buttons and an empty frame, which reads as something being broken rather than as
+    // something not filled in yet.
+    var onLastStep = currentStep === STEP_KEYS.length;
+    $('qrPanel').hidden = !onLastStep;
+    $('columns').classList.toggle('columns--solo', !onLastStep);
+
     $('prevStepBtn').disabled = currentStep === 1;
-    $('nextStepBtn').disabled = currentStep === STEP_KEYS.length;
+    $('nextStepBtn').disabled = onLastStep;
     $('stepCount').textContent = t('stepCount')
       .replace('{n}', currentStep).replace('{total}', STEP_KEYS.length);
 
