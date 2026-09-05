@@ -46,6 +46,10 @@ settings, when a site genuinely needs it.
 - **Provisioning options** — keep the manufacturer's system apps, skip encryption
 - **Editable payload** — every generated code is shown as JSON you can edit by hand, and
   anything Android accepts but this page does not write can simply be typed in
+- **Colour and a centre logo** — set on a separate appearance page and remembered for every
+  code you generate afterwards. Every rendered code is read back with the decoder this page
+  already carries, so a logo that covers too much or a colour too pale is caught here rather
+  than on an already-wiped device
 - **Save and reload your settings** as a file, on another machine or another day
 - **Printable instruction sheet** with the code, the steps and a summary of what the code
   contains — the browser's own "Save as PDF" turns it into a PDF, with no PDF library involved
