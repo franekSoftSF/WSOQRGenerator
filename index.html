@@ -1050,6 +1050,7 @@
   function currentConfig() {
     var config = { tool: 'android-enrollment-qr', version: 1, mode: mode(), ws1Auth: ws1Auth(), amapiInput: amapiInput(), fields: {}, flags: {} };
     FIELDS.forEach(function (id) { config.fields[id] = $(id).value; });
+    config.style = qrStyle;
     FLAGS.forEach(function (id) { config.flags[id] = $(id).checked; });
     return config;
   }
@@ -1075,6 +1076,13 @@
     setRadio('mode', config.mode);
     setRadio('ws1Auth', config.ws1Auth);
     setRadio('amapiInput', config.amapiInput);
+
+    // The look travels with the file. Written through the shared store, so the appearance page
+    // shows the same thing the next time it is opened.
+    if (config.style) {
+      window.QR_STYLE.save(config.style);
+      reloadStyle();
+    }
 
     syncVisibility();
     refreshFromFields();

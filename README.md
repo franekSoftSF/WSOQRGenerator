@@ -50,7 +50,9 @@ settings, when a site genuinely needs it.
   code you generate afterwards. Every rendered code is read back with the decoder this page
   already carries, so a logo that covers too much or a colour too pale is caught here rather
   than on an already-wiped device
-- **Save and reload your settings** as a file, on another machine or another day
+- **Save and reload everything** as one file — the enrollment fields and the appearance
+  (colour, logo and its size) together, so the same file on another machine produces the same
+  code
 - **Printable instruction sheet** with the code, the steps and a summary of what the code
   contains — the browser's own "Save as PDF" turns it into a PDF, with no PDF library involved
 - **Five languages** — English, Polish, German, French and Czech, detected from the browser
