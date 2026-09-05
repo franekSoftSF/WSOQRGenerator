@@ -198,7 +198,9 @@
     .print-sheet h2 { font-size: 12pt; margin: 16pt 0 6pt; }
     .print-sheet img { width: 62mm; height: 62mm; border: 1px solid #999; }
     .print-sheet ol { padding-left: 16pt; }
-    .print-sheet li { margin-bottom: 6pt; }
+    .print-sheet li { margin-bottom: 10pt; }
+    .print-sheet li strong { display: block; margin-bottom: 2pt; }
+    .print-sheet li p { margin: 0 0 4pt; }
     .print-sheet table { border-collapse: collapse; font-size: 10pt; margin-top: 6pt; }
     .print-sheet td { border-bottom: 1px solid #ddd; padding: 3pt 10pt 3pt 0; vertical-align: top; }
     .print-sheet .warn { color: #a02020; font-weight: 600; }
@@ -1009,13 +1011,21 @@
 
     $('printIntro').textContent = isAmapi ? t('pIntroAmapi') : t('pIntroWs1');
 
+    // Each step is a heading plus its own paragraphs - the sheet is read while standing over
+    // a device, and a wall of text in one line is the wrong shape for that.
     var steps = [
-      t('pStep1'),
-      t('pStep2'),
-      wifiInQr ? t('pStep3Wifi') : t('pStep3Device'),
-      t('pStep4')
+      [t('pStep1T'), [t('pStep1B')]],
+      [t('pStep2T'), [t('pStep2B'), t('pStep2B2')]],
+      [t('pStep3T'), [t('pStep3B'), wifiInQr ? t('pStep3Wifi') : t('pStep3NoWifi')]],
+      [isAmapi ? t('pStep4TAmapi') : t('pStep4T'),
+       [isAmapi ? t('pStep4BAmapi') : t('pStep4B'), t('pStep4Wait'),
+        isAmapi ? t('pStep4DoneAmapi') : t('pStep4Done')]]
     ];
-    $('printSteps').innerHTML = steps.map(function (s) { return '<li>' + s + '</li>'; }).join('');
+
+    $('printSteps').innerHTML = steps.map(function (step) {
+      var body = step[1].map(function (paragraph) { return '<p>' + paragraph + '</p>'; }).join('');
+      return '<li><strong>' + step[0] + '</strong>' + body + '</li>';
+    }).join('');
 
     var rows = [];
     if (isAmapi) {
