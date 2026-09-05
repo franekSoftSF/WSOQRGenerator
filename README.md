@@ -75,11 +75,11 @@ page — see `LICENSE-qrcode.txt`.
 
 ## The bigger tool
 
-This page covers a single device at a time. Bulk enrollment from CSV, day-2 device actions
-(sync, clear passcode, exit kiosk, remote assist, wipe), migration between UEM consoles with a
-self-service portal, Active Directory password rotation and email notifications are what
-[WSO QR](https://github.com/franekSoftSF/WS1QRGen) does — a self-hosted application for
-Workspace ONE UEM, installed on your own IIS.
+This page covers a single device at a time. Bulk Android enrollment and migration to
+Workspace ONE UEM — from on-prem Workspace ONE, SOTI, ME MDM or Intune — are what
+[WSO QR](https://github.com/franekSoftSF/WS1QRGen) does, together with day-2 device actions,
+a self-service portal, Active Directory password rotation and email notifications. It is a
+self-hosted application installed on your own IIS.
 
 ## License
 

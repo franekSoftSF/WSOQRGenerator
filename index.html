@@ -91,11 +91,8 @@
   .wizard-nav { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
   .wizard-nav__count { font-size: 12.5px; color: var(--muted); }
 
-  .columns { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 18px; align-items: start; }
-  /* Until the last step there is no QR panel, so the form takes the full width instead of
-     leaving a 330 px hole next to itself. */
-  .columns--solo { grid-template-columns: minmax(0, 1fr); }
-  @media (max-width: 900px) { .columns { grid-template-columns: minmax(0, 1fr); } }
+  .columns { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; align-items: start; }
+
 
   .flow { display: flex; flex-direction: column; gap: 18px; }
   .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 12px 16px; }
@@ -138,9 +135,12 @@
   .qr-box { display: flex; flex-direction: column; align-items: center; gap: 10px; }
   /* Rendered at 640 px and shown at 300: the downloaded PNG and the printed sheet stay sharp,
      and a code this dense is still re-readable when someone scans it back in. */
-  .qr-box canvas { border: 1px solid var(--line); border-radius: 8px; background: #fff; width: 300px; max-width: 100%; height: auto; }
+  .qr-box canvas {
+    border: 1px solid var(--line); border-radius: 8px; background: #fff;
+    width: 320px; max-width: 100%; height: auto; aspect-ratio: 1 / 1;
+  }
   .qr-empty { color: var(--muted); font-size: 13px; text-align: center; padding: 44px 10px; }
-  .qr-actions { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+  .qr-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 
   .inline-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 
@@ -209,6 +209,7 @@
     <h2 data-i18n="aboutTitle"></h2>
     <p data-i18n="aboutLead"></p>
     <p data-i18n="aboutPrivacy"></p>
+    <p data-i18n="aboutOffline"></p>
     <p>
       <span data-i18n="aboutProduct"></span>
       <a href="https://github.com/franekSoftSF/WS1QRGen" rel="noopener">WSO QR</a>.
@@ -249,7 +250,8 @@
           </label>
           <label class="checkbox"><input type="radio" name="ws1Auth" value="token">
             <span><strong data-i18n="authToken"></strong><br>
-            <span class="hint" style="margin:0;" data-i18n="authTokenDesc"></span></span>
+            <span class="hint" style="margin:0;" data-i18n="authTokenDesc"></span>
+            <span class="hint" style="margin:0;" data-i18n="tokenOneTime"></span></span>
           </label>
         </div>
 
@@ -320,6 +322,7 @@
           </select>
         </label>
         <p class="hint" id="wifiHint" data-i18n="wifiHintDevice"></p>
+        <p class="hint" data-i18n="wifiNoScan"></p>
 
         <div id="wifiFields" hidden style="margin-top:12px;">
           <div class="grid2">
@@ -384,6 +387,38 @@
         <p class="hint" data-i18n="optionsHint"></p>
       </section>
 
+      <section class="card" id="qrPanel" hidden>
+      <h2 data-i18n="qrHeading"></h2>
+      <div class="qr-box">
+        <canvas id="qrCanvas" hidden></canvas>
+        <div class="qr-empty" id="qrEmpty"></div>
+        <p class="hint" id="qrVerdict" style="text-align:center; margin:0;"></p>
+        <details class="about" style="width:100%;">
+          <summary data-i18n="qrCustomTitle"></summary>
+          <div class="grid2" style="margin-top:10px;">
+            <label class="field"><span data-i18n="qrColorLabel"></span>
+              <input type="color" id="qrColor" value="#1e1b2e">
+            </label>
+            <label class="field"><span data-i18n="qrLogoLabel"></span>
+              <select id="qrLogoMode">
+                <option value="none" selected data-i18n="qrLogoNone"></option>
+                <option value="builtin" data-i18n="qrLogoBuiltin"></option>
+                <option value="own" data-i18n="qrLogoOwn"></option>
+              </select>
+            </label>
+          </div>
+          <input type="file" id="qrLogoFile" accept="image/*" hidden>
+          <p class="hint" data-i18n="qrCustomNote"></p>
+        </details>
+
+        <div class="qr-actions">
+          <button class="btn btn--primary" id="downloadBtn" disabled data-i18n="downloadPng"></button>
+          <button class="btn" id="printBtn" disabled data-i18n="printPdf"></button>
+          <button class="btn" id="saveConfigBtn" data-i18n="saveConfig"></button>
+        </div>
+        <p class="hint" style="text-align:center;" data-i18n="scanHint"></p>
+      </div>
+      </section>
       <section class="card" data-step="5">
         <h2><span class="step">5</span> <span data-i18n="step5"></span></h2>
         <textarea id="payload" spellcheck="false"></textarea>
@@ -449,19 +484,6 @@
 
     </div>
 
-    <aside class="card" id="qrPanel" hidden>
-      <h2 data-i18n="qrHeading"></h2>
-      <div class="qr-box">
-        <canvas id="qrCanvas" hidden></canvas>
-        <div class="qr-empty" id="qrEmpty"></div>
-        <div class="qr-actions">
-          <button class="btn btn--primary" id="downloadBtn" disabled data-i18n="downloadPng"></button>
-          <button class="btn" id="printBtn" disabled data-i18n="printPdf"></button>
-          <button class="btn" id="saveConfigBtn" data-i18n="saveConfig"></button>
-        </div>
-        <p class="hint" style="text-align:center;" data-i18n="scanHint"></p>
-      </div>
-    </aside>
   </div>
 
   <footer>
@@ -474,7 +496,7 @@
     </p>
     <p>
       <a href="https://github.com/franekSoftSF/WS1QRGen" rel="noopener">WSO QR</a> —
-      bulk Android enrollment, day-2 device actions and migration between UEM consoles.
+      <span data-i18n="product"></span>
     </p>
     <p>
       Inspired by <a href="https://wssyd.github.io/ws1-android-qr-helper/" rel="noopener">ws1-android-qr-helper</a>.
@@ -493,7 +515,7 @@
   <h2>This code is set up for</h2>
   <table id="printSummary"></table>
   <p class="warn" id="printWarning"></p>
-  <p class="foot">Generated with the Android Enrollment QR Generator — github.com/franekSoftSF/WSOQRGenerator</p>
+  <p class="foot" id="printFoot"></p>
 </div>
 
 <script src="qrcode.min.js"></script>
@@ -781,6 +803,7 @@
   }
 
   var suppressRender = false;
+  var qrLogoImage = null;
 
   function refreshFromFields() {
     var payload = buildPayload();
@@ -819,8 +842,29 @@
     // Compact JSON, exactly like the admin panel - indentation would only make the code denser.
     // margin 4 is the quiet zone the QR spec asks for - the admin panel gets away with 1
     // because its codes are scanned off a screen, but these get printed and re-scanned.
-    QRCode.toCanvas(canvas, JSON.stringify(parsed), { width: 640, margin: 4, errorCorrectionLevel: 'M' }, function (err) {
+    // With a logo the code loses usable modules, so it is generated at the highest error
+    // correction level, which is what keeps it readable with a hole punched in the middle.
+    // 1024 px, not 640. Measured on a real payload: at 640 a code with the highest error
+    // correction has roughly two pixels per module and stops being readable - the logo was
+    // never the culprit, the resolution was. At 1024 the same code with a fifth of its area
+    // covered by a logo reads back fine.
+    var options = {
+      width: 1024,
+      margin: 4,
+      errorCorrectionLevel: qrLogoImage ? 'H' : 'M',
+      color: { dark: $('qrColor').value, light: '#ffffff' }
+    };
+
+    QRCode.toCanvas(canvas, JSON.stringify(parsed), options, function (err) {
       if (err) { fail('' + err.message); return; }
+      drawLogo(canvas);
+      verifyReadable(canvas);
+
+      // node-qrcode writes width and height straight into the style attribute. A stylesheet
+      // can cap the width but not that inline height, which left the code as a tall rectangle.
+      // Clearing both hands sizing back to the rule below, which keeps it square.
+      canvas.style.width = '';
+      canvas.style.height = '';
       canvas.hidden = false;
       empty.hidden = true;
       $('downloadBtn').disabled = false;
@@ -833,6 +877,74 @@
       $('payloadHint').className = 'hint';
     });
   }
+
+  // Every rendered code is read back with the decoder this page already carries. A logo that
+  // covers too much, or a colour too pale against white, produces something that looks like a
+  // QR code and is not one any more - and that only shows up on an already-wiped device.
+  function verifyReadable(canvas) {
+    var note = $('qrVerdict');
+    try {
+      var ctx = canvas.getContext('2d');
+      var px = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      var ok = !!window.jsQR(px.data, px.width, px.height);
+      note.textContent = ok ? t('qrReadable') : t('qrUnreadable');
+      note.className = 'hint ' + (ok ? 'hint--ok' : 'hint--warn');
+    } catch (e) {
+      note.textContent = '';
+      note.className = 'hint';
+    }
+  }
+
+  // The logo sits on a white pad so it never touches a dark module, and covers a fifth of the
+  // width - past roughly a quarter even the highest error correction stops saving the code.
+  function drawLogo(canvas) {
+    if (!qrLogoImage) { return; }
+
+    var ctx = canvas.getContext('2d');
+    var size = Math.round(canvas.width * 0.2);
+    var pad = Math.round(size * 0.12);
+    var x = Math.round((canvas.width - size) / 2);
+    var y = Math.round((canvas.height - size) / 2);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(x - pad, y - pad, size + pad * 2, size + pad * 2);
+
+    // Fitted inside the square without stretching - a squashed logo looks like a rendering bug.
+    var ratio = Math.min(size / qrLogoImage.naturalWidth, size / qrLogoImage.naturalHeight);
+    var w = qrLogoImage.naturalWidth * ratio;
+    var hgt = qrLogoImage.naturalHeight * ratio;
+    ctx.drawImage(qrLogoImage, x + (size - w) / 2, y + (size - hgt) / 2, w, hgt);
+  }
+
+  function setLogo(src) {
+    if (!src) { qrLogoImage = null; renderFromPayloadBox(); return; }
+    var image = new Image();
+    image.onload = function () { qrLogoImage = image; renderFromPayloadBox(); };
+    image.onerror = function () {
+      qrLogoImage = null;
+      sayScan(t('qrLogoTooBig'), 'hint--warn');
+      renderFromPayloadBox();
+    };
+    image.src = src;
+  }
+
+  $('qrColor').addEventListener('input', renderFromPayloadBox);
+
+  $('qrLogoMode').addEventListener('change', function () {
+    var mode = $('qrLogoMode').value;
+    if (mode === 'none') { setLogo(null); }
+    else if (mode === 'builtin') { setLogo('logo.png'); }
+    else { $('qrLogoFile').click(); }
+  });
+
+  $('qrLogoFile').addEventListener('change', function (e) {
+    var file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!file) { $('qrLogoMode').value = qrLogoImage ? 'own' : 'none'; return; }
+    var reader = new FileReader();
+    reader.onload = function () { setLogo(String(reader.result)); };
+    reader.readAsDataURL(file);
+  });
 
   function syncVisibility() {
     var isAmapi = mode() === 'amapi';
@@ -861,57 +973,70 @@
     }
   }
 
-  // The printed sheet is deliberately always English: it travels with devices, often to people
-  // in other countries, and one predictable language beats five that have to be kept in sync.
+  // The sheet follows the language picked on screen - it is printed by the same person who
+  // filled the form in, and handed to whoever does the enrolling.
   function buildPrintSheet() {
     var wifiInQr = $('wifiMode').value === 'qr';
     var isAmapi = mode() === 'amapi';
 
     var current = $('qrCanvas').toDataURL('image/png');
     if ($('printQr').src !== current) { $('printQr').src = current; }
-    $('printIntro').textContent = isAmapi
-      ? 'Scan the code below on a factory-reset device to enrol it through the Android Management API.'
-      : 'Scan the code below on a factory-reset device to enrol it in Workspace ONE UEM.';
+    document.querySelector('.print-sheet h1').textContent = t('pTitle');
+    document.querySelectorAll('.print-sheet h2')[0].textContent = t('pStepsHeading');
+    document.querySelectorAll('.print-sheet h2')[1].textContent = t('pSummaryHeading');
+    $('printFoot').textContent = t('pFooter');
+
+    $('printIntro').textContent = isAmapi ? t('pIntroAmapi') : t('pIntroWs1');
 
     var steps = [
-      'Start from a factory-reset device. If it is already set up, wipe it first — a device-owner code only works on the very first setup screen.',
-      'On the welcome screen, tap the same spot six times. The device opens a QR scanner. Older devices may ask you to connect to WiFi before the scanner appears.',
-      wifiInQr
-        ? 'Scan the code. The device joins the WiFi network stored in the code by itself.'
-        : 'Scan the code, then pick your WiFi network and enter its password when the device asks.',
-      'Let the device download the management app and finish provisioning. This takes a few minutes and the device restarts on its own.'
+      t('pStep1'),
+      t('pStep2'),
+      wifiInQr ? t('pStep3Wifi') : t('pStep3Device'),
+      t('pStep4')
     ];
     $('printSteps').innerHTML = steps.map(function (s) { return '<li>' + s + '</li>'; }).join('');
 
     var rows = [];
     if (isAmapi) {
-      rows.push(['Enrollment', 'Android Management API']);
+      rows.push([t('pRowEnrollment'), 'Android Management API']);
     } else {
-      rows.push(['Server', trimmed('serverUrl') || '—']);
-      rows.push([ws1Auth() === 'token' ? 'Enrollment token' : 'Group ID', trimmed('groupId') || '—']);
-      if (trimmed('username')) { rows.push(['Username', trimmed('username')]); }
+      rows.push([t('pRowServer'), trimmed('serverUrl') || '—']);
+      rows.push([ws1Auth() === 'token' ? t('pRowToken') : t('pRowGroup'), trimmed('groupId') || '—']);
+      if (trimmed('username')) { rows.push([t('pRowUsername'), trimmed('username')]); }
     }
-    rows.push(['WiFi', wifiInQr ? (trimmed('wifiSsid') || '—') + ' (stored in the code)' : 'Chosen on the device']);
-    if (trimmed('locale')) { rows.push(['Locale', trimmed('locale')]); }
-    if (trimmed('timeZone')) { rows.push(['Time zone', trimmed('timeZone')]); }
+    rows.push([t('pRowWifi'), wifiInQr
+      ? (trimmed('wifiSsid') || '—') + ' (' + t('pWifiInCode') + ')'
+      : t('pWifiOnDevice')]);
+    // Passwords are never printed in the clear - the sheet is carried around and left lying on
+    // desks. A masked row still answers the question the reader actually has: was one set?
+    if (!isAmapi && trimmed('password')) { rows.push([t('pRowPassword'), '•••••••• (' + t('pMasked') + ')']); }
+    if (wifiInQr && trimmed('wifiPassword')) { rows.push([t('pRowWifiPassword'), '•••••••• (' + t('pMasked') + ')']); }
+    if (trimmed('locale')) { rows.push([t('pRowLocale'), trimmed('locale')]); }
+    if (trimmed('timeZone')) { rows.push([t('pRowTimeZone'), trimmed('timeZone')]); }
 
     $('printSummary').innerHTML = rows.map(function (r) {
       return '<tr><td><strong>' + r[0] + '</strong></td><td>' + r[1] + '</td></tr>';
     }).join('');
 
     var secrets = [];
-    if (wifiInQr && $('wifiSecurity').value !== 'NONE') { secrets.push('the WiFi password'); }
-    if (!isAmapi && trimmed('password')) { secrets.push('the enrollment account password'); }
-    if (isAmapi || ws1Auth() === 'token') { secrets.push('an enrollment token'); }
+    if (wifiInQr && $('wifiSecurity').value !== 'NONE') { secrets.push(t('pWarnWifi')); }
+    if (!isAmapi && trimmed('password')) { secrets.push(t('pWarnPassword')); }
+    if (isAmapi || ws1Auth() === 'token') { secrets.push(t('pWarnToken')); }
 
-    $('printWarning').textContent = secrets.length
-      ? 'This code contains ' + secrets.join(' and ') + '. Treat this sheet as confidential and destroy it once the devices are enrolled.'
-      : '';
+    // Joined with the language's own word for "and" - three items read as "a, b and c".
+    var items = secrets.length > 1
+      ? secrets.slice(0, -1).join(', ') + ' ' + t('pAnd') + ' ' + secrets[secrets.length - 1]
+      : secrets[0];
+
+    $('printWarning').textContent = secrets.length ? t('pWarn').replace('{items}', items) : '';
   }
 
   function currentConfig() {
     var config = { tool: 'android-enrollment-qr', version: 1, mode: mode(), ws1Auth: ws1Auth(), amapiInput: amapiInput(), fields: {}, flags: {} };
     FIELDS.forEach(function (id) { config.fields[id] = $(id).value; });
+    // The colour travels with the configuration; a logo does not - it would bloat the file, and
+    // it is one click to put back.
+    config.fields.qrColor = $('qrColor').value;
     FLAGS.forEach(function (id) { config.flags[id] = $(id).checked; });
     return config;
   }
