@@ -93,14 +93,19 @@
   .field-error input, .field-error select { border-color: var(--danger); }
 
   /* Password fields are masked by default with a reveal button, the same way the admin panel
-     handles them: these get filled in over someone's shoulder in a warehouse office. */
-  .secret { position: relative; display: flex; }
-  .secret input { padding-right: 64px; }
+     handles them: these get filled in over someone's shoulder in a warehouse office.
+     The wrapper must not change the field's own geometry - it is the same box as every other
+     input, with the button placed inside it. */
+  .secret { position: relative; display: block; width: 100%; }
+  .secret input { padding-right: 68px; }
   .secret button {
-    position: absolute; right: 4px; top: 4px; bottom: 4px;
-    border: 0; background: transparent; color: var(--accent);
-    font: inherit; font-size: 12px; padding: 0 8px; cursor: pointer;
+    position: absolute; right: 1px; top: 1px; bottom: 1px;
+    border: 0; border-radius: 0 5px 5px 0; background: transparent; color: var(--accent);
+    font: inherit; font-size: 12px; padding: 0 10px; cursor: pointer;
   }
+  /* Edge and IE draw their own reveal eye inside password inputs. Left alone, the field ends
+     up with two of them and sits differently from every other field on the page. */
+  .secret input::-ms-reveal, .secret input::-ms-clear { display: none; }
 
   .columns { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; align-items: start; }
 
@@ -110,7 +115,7 @@
 
   label.field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
 
-  input[type="text"], input[type="number"], select, textarea {
+  input[type="text"], input[type="password"], input[type="number"], select, textarea {
     font: inherit; font-size: 14px; color: var(--ink); background: var(--surface);
     border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; width: 100%;
   }
@@ -254,83 +259,8 @@
   <div class="columns" id="columns">
     <div class="flow">
 
-      <section class="card" id="ws1Section" data-step="2">
-        <h2><span class="step">2</span> <span data-i18n="step2Ws1"></span></h2>
-        <div style="display:flex; flex-direction:column; gap:8px;">
-          <label class="checkbox"><input type="radio" name="ws1Auth" value="credentials" checked>
-            <span><strong data-i18n="authCredentials"></strong><br>
-            <span class="hint" style="margin:0;" data-i18n="authCredentialsDesc"></span></span>
-          </label>
-          <label class="checkbox"><input type="radio" name="ws1Auth" value="token">
-            <span><strong data-i18n="authToken"></strong><br>
-            <span class="hint" style="margin:0;" data-i18n="authTokenDesc"></span>
-            <span class="hint" style="margin:0;" data-i18n="tokenOneTime"></span></span>
-          </label>
-        </div>
-
-        <div style="margin-top:14px;">
-          <div class="drop" id="qrDrop" tabindex="0" role="button">
-            <strong data-i18n="scanTitle"></strong>
-            <span data-i18n="scanSubtitle"></span>
-          </div>
-          <input type="file" id="qrFile" accept="image/*" hidden>
-          <p class="hint" id="urlHint"></p>
-        </div>
-
-        <div class="grid2" style="margin-top:14px;">
-          <label class="field"><span data-i18n="serverLabel"></span>
-            <input type="text" id="serverUrl" placeholder="ds1234.awmdm.com" autocomplete="off">
-          </label>
-          <label class="field"><span id="gidLabel"></span>
-            <input type="text" id="groupId" placeholder="MY_OG" autocomplete="off">
-          </label>
-          <label class="field"><span data-i18n="usernameLabel"></span>
-            <input type="text" id="username" autocomplete="off">
-          </label>
-          <label class="field"><span data-i18n="passwordLabel"></span>
-            <span class="secret">
-              <input type="password" id="password" autocomplete="off">
-              <button type="button" class="reveal" data-for="password"></button>
-            </span>
-          </label>
-        </div>
-        <p class="hint" id="credentialsHint"></p>
-
-        <div style="margin-top:12px; display:flex; flex-direction:column; gap:8px;">
-          <label class="checkbox"><input type="checkbox" id="useUemAuth" checked> <span data-i18n="useUemAuth"></span></label>
-          <label class="checkbox"><input type="checkbox" id="thirdPartyCookies"> <span data-i18n="thirdPartyCookies"></span></label>
-        </div>
-      </section>
-
-      <section class="card" id="amapiSection" data-step="2" hidden>
-        <h2><span class="step">2</span> <span data-i18n="step2Amapi"></span></h2>
-        <p class="hint" style="margin:-6px 0 12px;" data-i18n="amapiIntro"></p>
-
-        <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;">
-          <label class="checkbox"><input type="radio" name="amapiInput" value="token" checked> <span data-i18n="amapiByToken"></span></label>
-          <label class="checkbox"><input type="radio" name="amapiInput" value="json"> <span data-i18n="amapiByJson"></span></label>
-        </div>
-
-        <div id="amapiTokenBox">
-          <label class="field"><span data-i18n="amapiTokenLabel"></span>
-            <input type="text" id="enrollmentToken" placeholder="ABCDEFGHIJKLMNOP" autocomplete="off">
-          </label>
-          <p class="hint constants">
-            <code>com.google.android.apps.work.clouddpc.EXTRA_ENROLLMENT_TOKEN</code> +
-            <code>com.google.android.apps.work.clouddpc/.receivers.CloudDeviceAdminReceiver</code>
-          </p>
-        </div>
-
-        <div id="amapiJsonBox" hidden>
-          <label class="field"><span data-i18n="amapiJsonLabel"></span>
-            <textarea id="amapiJson" placeholder='{"android.app.extra.PROVISIONING_DEVICE_ADMIN_COMPONENT_NAME": "..."}' style="min-height:150px;"></textarea>
-          </label>
-          <p class="hint" data-i18n="amapiJsonHint"></p>
-        </div>
-      </section>
-
-      <section class="card" data-step="3">
-        <h2><span class="step">3</span> <span data-i18n="step3"></span></h2>
+      <section class="card" data-step="2">
+        <h2><span class="step">2</span> <span data-i18n="step3"></span></h2>
         <label class="field" style="max-width:400px;"><span data-i18n="wifiLabel"></span>
           <select id="wifiMode">
             <option value="device" selected data-i18n="wifiDevice"></option>
@@ -382,6 +312,81 @@
               <p class="hint" data-i18n="proxyHint"></p>
             </div>
           </details>
+        </div>
+      </section>
+
+      <section class="card" id="ws1Section" data-step="3">
+        <h2><span class="step">3</span> <span data-i18n="step2Ws1"></span></h2>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <label class="checkbox"><input type="radio" name="ws1Auth" value="credentials" checked>
+            <span><strong data-i18n="authCredentials"></strong><br>
+            <span class="hint" style="margin:0;" data-i18n="authCredentialsDesc"></span></span>
+          </label>
+          <label class="checkbox"><input type="radio" name="ws1Auth" value="token">
+            <span><strong data-i18n="authToken"></strong><br>
+            <span class="hint" style="margin:0;" data-i18n="authTokenDesc"></span>
+            <span class="hint" style="margin:0;" data-i18n="tokenOneTime"></span></span>
+          </label>
+        </div>
+
+        <div style="margin-top:14px;">
+          <div class="drop" id="qrDrop" tabindex="0" role="button">
+            <strong data-i18n="scanTitle"></strong>
+            <span data-i18n="scanSubtitle"></span>
+          </div>
+          <input type="file" id="qrFile" accept="image/*" hidden>
+          <p class="hint" id="urlHint"></p>
+        </div>
+
+        <div class="grid2" style="margin-top:14px;">
+          <label class="field"><span data-i18n="serverLabel"></span>
+            <input type="text" id="serverUrl" placeholder="ds1234.awmdm.com" autocomplete="off">
+          </label>
+          <label class="field"><span id="gidLabel"></span>
+            <input type="text" id="groupId" placeholder="MY_OG" autocomplete="off">
+          </label>
+          <label class="field"><span data-i18n="usernameLabel"></span>
+            <input type="text" id="username" autocomplete="off">
+          </label>
+          <label class="field"><span data-i18n="passwordLabel"></span>
+            <span class="secret">
+              <input type="password" id="password" autocomplete="off">
+              <button type="button" class="reveal" data-for="password"></button>
+            </span>
+          </label>
+        </div>
+        <p class="hint" id="credentialsHint"></p>
+
+        <div style="margin-top:12px; display:flex; flex-direction:column; gap:8px;">
+          <label class="checkbox"><input type="checkbox" id="useUemAuth" checked> <span data-i18n="useUemAuth"></span></label>
+          <label class="checkbox"><input type="checkbox" id="thirdPartyCookies"> <span data-i18n="thirdPartyCookies"></span></label>
+        </div>
+      </section>
+
+      <section class="card" id="amapiSection" data-step="3" hidden>
+        <h2><span class="step">3</span> <span data-i18n="step2Amapi"></span></h2>
+        <p class="hint" style="margin:-6px 0 12px;" data-i18n="amapiIntro"></p>
+
+        <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;">
+          <label class="checkbox"><input type="radio" name="amapiInput" value="token" checked> <span data-i18n="amapiByToken"></span></label>
+          <label class="checkbox"><input type="radio" name="amapiInput" value="json"> <span data-i18n="amapiByJson"></span></label>
+        </div>
+
+        <div id="amapiTokenBox">
+          <label class="field"><span data-i18n="amapiTokenLabel"></span>
+            <input type="text" id="enrollmentToken" placeholder="ABCDEFGHIJKLMNOP" autocomplete="off">
+          </label>
+          <p class="hint constants">
+            <code>com.google.android.apps.work.clouddpc.EXTRA_ENROLLMENT_TOKEN</code> +
+            <code>com.google.android.apps.work.clouddpc/.receivers.CloudDeviceAdminReceiver</code>
+          </p>
+        </div>
+
+        <div id="amapiJsonBox" hidden>
+          <label class="field"><span data-i18n="amapiJsonLabel"></span>
+            <textarea id="amapiJson" placeholder='{"android.app.extra.PROVISIONING_DEVICE_ADMIN_COMPONENT_NAME": "..."}' style="min-height:150px;"></textarea>
+          </label>
+          <p class="hint" data-i18n="amapiJsonHint"></p>
         </div>
       </section>
 
@@ -966,8 +971,8 @@
     var isAmapi = mode() === 'amapi';
     // Which of the two step-2 cards exists is decided here; whether it is on screen at all is
     // decided by showStep(), so the two must not fight over the same attribute.
-    $('ws1Section').hidden = isAmapi || currentStep !== 2;
-    $('amapiSection').hidden = !isAmapi || currentStep !== 2;
+    $('ws1Section').hidden = isAmapi || currentStep !== 3;
+    $('amapiSection').hidden = !isAmapi || currentStep !== 3;
     $('modeCardWs1').classList.toggle('mode--on', !isAmapi);
     $('modeCardAmapi').classList.toggle('mode--on', isAmapi);
 
@@ -1185,12 +1190,14 @@
   // --- Wizard: one step visible at a time -------------------------------------------------
   // The QR panel deliberately stays outside this: it updates while you type, and hiding it
   // until the last step would take away the immediate feedback that makes the tool usable.
-  var STEP_KEYS = ['step1', 'step2Ws1', 'step3', 'step4', 'step5'];
+  // Order on screen: method, network, then who the device says it is. The network decision
+  // shapes the rest - with WiFi left to the device there is nothing more to fill in there.
+  var STEP_KEYS = ['step1', 'step3', 'step2Ws1', 'step4', 'step5'];
   var currentStep = 1;
 
   function stepTitle(index) {
-    // Step 2 has two names depending on the enrollment method chosen in step 1.
-    if (index === 2) { return mode() === 'amapi' ? t('step2Amapi') : t('step2Ws1'); }
+    // Step 3 has two names depending on the enrollment method chosen in step 1.
+    if (index === 3) { return mode() === 'amapi' ? t('step2Amapi') : t('step2Ws1'); }
     return t(STEP_KEYS[index - 1]);
   }
 
@@ -1242,25 +1249,25 @@
   // Only the current step is checked - a half-filled step four is not a reason to refuse
   // going back to step one.
   function findProblem(index) {
-    if (index === 2 && mode() !== 'amapi') {
+    if (index === 2 && $('wifiMode').value === 'qr') {
+      if (!trimmed('wifiSsid')) { return { field: 'wifiSsid', message: t('errSsid') }; }
+      if ($('wifiSecurity').value !== 'NONE' && !trimmed('wifiPassword')) {
+        return { field: 'wifiPassword', message: t('errWifiPassword') };
+      }
+    }
+
+    if (index === 3 && mode() !== 'amapi') {
       if (!trimmed('serverUrl') || !trimmed('groupId')) {
         return { field: !trimmed('serverUrl') ? 'serverUrl' : 'groupId', message: t('errServer') };
       }
     }
 
-    if (index === 2 && mode() === 'amapi') {
+    if (index === 3 && mode() === 'amapi') {
       if (amapiInput() === 'token' && !trimmed('enrollmentToken')) {
         return { field: 'enrollmentToken', message: t('errToken') };
       }
       if (amapiInput() === 'json' && !trimmed('amapiJson')) {
         return { field: 'amapiJson', message: t('errJson') };
-      }
-    }
-
-    if (index === 3 && $('wifiMode').value === 'qr') {
-      if (!trimmed('wifiSsid')) { return { field: 'wifiSsid', message: t('errSsid') }; }
-      if ($('wifiSecurity').value !== 'NONE' && !trimmed('wifiPassword')) {
-        return { field: 'wifiPassword', message: t('errWifiPassword') };
       }
     }
 
