@@ -4,16 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Android Enrollment QR Generator — Workspace ONE &amp; Android Management API</title>
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
 <meta name="description" content="Free, browser-only QR code generator for Android Enterprise device provisioning. Workspace ONE UEM (custom DPC, enrollment token, enrollment URL) and Android Management API. Nothing leaves your browser.">
 <style>
-  /* Same palette as the WSO QR admin panel. */
+  /* Violet palette matching the Workspace ONE product colours. Colours only - no logo or
+     other mark belonging to Omnissa is used anywhere on this page. */
   :root {
-    --ink: #1c2430;
-    --muted: #6b7684;
-    --line: #e1e5ea;
+    --ink: #1e1b2e;
+    --muted: #6b6880;
+    --line: #e4e0f0;
     --surface: #ffffff;
-    --bg: #f5f6f8;
-    --accent: #2f6fed;
+    --bg: #f7f6fb;
+    --accent: #5b12d4;
+    --accent-soft: #8b5cf6;
+    --accent-wash: #f1ecfe;
     --danger: #c0392b;
     --ok: #1f9d55;
   }
@@ -32,6 +36,9 @@
   .page { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
 
   .topbar { display: flex; gap: 20px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
+  .brand { display: flex; gap: 12px; align-items: flex-start; }
+  .brand img { width: 44px; height: 44px; border-radius: 8px; flex: none; }
+  .intro { border-left: 3px solid var(--accent); }
   .topbar h1 { margin: 0 0 6px; font-size: 23px; }
   .topbar p { margin: 0; color: var(--muted); font-size: 14px; max-width: 780px; }
   .lang { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
@@ -54,8 +61,29 @@
   .step {
     display: inline-flex; align-items: center; justify-content: center;
     width: 20px; height: 20px; border-radius: 50%;
-    background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; flex: none;
+    background: linear-gradient(135deg, var(--accent), var(--accent-soft));
+    color: #fff; font-size: 11px; font-weight: 700; flex: none;
   }
+
+  /* Progress rail: one card at a time, every step still reachable by clicking. */
+  .rail { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .rail__item {
+    display: flex; align-items: center; gap: 7px;
+    border: 1px solid var(--line); border-radius: 999px;
+    background: var(--surface); color: var(--muted);
+    font: inherit; font-size: 13px; padding: 5px 12px 5px 6px; cursor: pointer;
+  }
+  .rail__item b {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--line); color: var(--muted); font-size: 11px; font-weight: 700;
+  }
+  .rail__item--on { border-color: var(--accent); color: var(--ink); background: var(--accent-wash); }
+  .rail__item--on b { background: linear-gradient(135deg, var(--accent), var(--accent-soft)); color: #fff; }
+  .rail__item--done b { background: var(--accent-soft); color: #fff; }
+
+  .wizard-nav { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+  .wizard-nav__count { font-size: 12.5px; color: var(--muted); }
 
   .columns { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 18px; align-items: start; }
   @media (max-width: 900px) { .columns { grid-template-columns: minmax(0, 1fr); } }
@@ -80,7 +108,7 @@
     flex: 1 1 230px; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;
     cursor: pointer; background: var(--surface); display: flex; gap: 9px; align-items: flex-start;
   }
-  .mode--on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  .mode--on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-wash); }
   .mode strong { display: block; font-size: 14px; font-weight: 600; }
   .mode span { display: block; font-size: 12px; color: var(--muted); }
 
@@ -88,7 +116,7 @@
     font: inherit; font-size: 14px; border: 1px solid var(--line); border-radius: 6px;
     padding: 8px 14px; background: var(--surface); color: var(--ink); cursor: pointer;
   }
-  .btn--primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn--primary { background: linear-gradient(135deg, var(--accent), var(--accent-soft)); border-color: var(--accent); color: #fff; }
   .btn--sm { font-size: 13px; padding: 6px 11px; }
   .btn:disabled { opacity: 0.55; cursor: not-allowed; }
 
@@ -99,11 +127,21 @@
   .constants code { color: var(--ink); }
 
   .qr-box { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-  .qr-box canvas { border: 1px solid var(--line); border-radius: 8px; background: #fff; max-width: 100%; }
+  /* Rendered at 640 px and shown at 300: the downloaded PNG and the printed sheet stay sharp,
+     and a code this dense is still re-readable when someone scans it back in. */
+  .qr-box canvas { border: 1px solid var(--line); border-radius: 8px; background: #fff; width: 300px; max-width: 100%; height: auto; }
   .qr-empty { color: var(--muted); font-size: 13px; text-align: center; padding: 44px 10px; }
   .qr-actions { display: flex; flex-direction: column; gap: 8px; width: 100%; }
 
   .inline-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+  .drop {
+    border: 1.5px dashed var(--line); border-radius: 8px; padding: 16px 14px;
+    text-align: center; background: var(--accent-wash); cursor: pointer;
+  }
+  .drop--over { border-color: var(--accent); }
+  .drop strong { display: block; font-size: 14px; color: var(--ink); margin-bottom: 2px; }
+  .drop span { font-size: 12.5px; color: var(--muted); }
 
   details.about summary { cursor: pointer; font-size: 14px; font-weight: 600; }
   details.about p, details.about ul, details.about table { font-size: 13.5px; color: var(--muted); }
@@ -142,9 +180,12 @@
 <div class="page">
 
   <div class="topbar">
-    <div>
-      <h1>Android Enrollment QR Generator</h1>
-      <p data-i18n="tagline"></p>
+    <div class="brand">
+      <img src="logo.png" alt="WSO QR">
+      <div>
+        <h1>Android Enrollment QR Generator</h1>
+        <p data-i18n="tagline"></p>
+      </div>
     </div>
     <label class="lang">
       <span data-i18n="langLabel"></span>
@@ -152,7 +193,26 @@
     </label>
   </div>
 
-  <section class="card">
+  <section class="card intro">
+    <h2 data-i18n="aboutTitle"></h2>
+    <p data-i18n="aboutLead" style="margin:0 0 10px; font-size:14px;"></p>
+    <p data-i18n="aboutPrivacy" style="margin:0 0 10px; font-size:14px;"></p>
+    <p style="margin:0 0 10px; font-size:14px;">
+      <span data-i18n="aboutProduct"></span>
+      <a href="https://github.com/franekSoftSF/WS1QRGen" rel="noopener">WSO QR</a>.
+    </p>
+    <p style="margin:0; font-size:14px;">
+      <span data-i18n="aboutContact"></span>
+      <a href="https://www.linkedin.com/in/szymon-frankiewicz-8ba881106/" rel="noopener">Szymon Frankiewicz</a>
+      ·
+      <a href="https://community.omnissa.com/" rel="noopener">Omnissa Community</a>
+      · <strong>#WeAreOmnissa</strong>
+    </p>
+  </section>
+
+  <nav class="rail" id="rail" aria-label="Steps"></nav>
+
+  <section class="card" data-step="1">
     <h2><span class="step">1</span> <span data-i18n="step1"></span></h2>
     <div class="modes">
       <label class="mode" id="modeCardWs1">
@@ -169,7 +229,7 @@
   <div class="columns">
     <div class="flow">
 
-      <section class="card" id="ws1Section">
+      <section class="card" id="ws1Section" data-step="2">
         <h2><span class="step">2</span> <span data-i18n="step2Ws1"></span></h2>
         <div style="display:flex; flex-direction:column; gap:8px;">
           <label class="checkbox"><input type="radio" name="ws1Auth" value="credentials" checked>
@@ -183,12 +243,11 @@
         </div>
 
         <div style="margin-top:14px;">
-          <label class="field"><span data-i18n="urlLabel"></span>
-            <div class="inline-row">
-              <input type="text" id="enrollmentUrl" placeholder="https://getwsone.com?serverurl=wso.acme.com&amp;gid=KW4OM9" autocomplete="off" style="flex:1 1 260px;">
-              <button class="btn btn--sm" type="button" id="parseUrlBtn" data-i18n="urlButton"></button>
-            </div>
-          </label>
+          <div class="drop" id="qrDrop" tabindex="0" role="button">
+            <strong data-i18n="scanTitle"></strong>
+            <span data-i18n="scanSubtitle"></span>
+          </div>
+          <input type="file" id="qrFile" accept="image/*" hidden>
           <p class="hint" id="urlHint"></p>
         </div>
 
@@ -214,7 +273,7 @@
         </div>
       </section>
 
-      <section class="card" id="amapiSection" hidden>
+      <section class="card" id="amapiSection" data-step="2" hidden>
         <h2><span class="step">2</span> <span data-i18n="step2Amapi"></span></h2>
         <p class="hint" style="margin:-6px 0 12px;" data-i18n="amapiIntro"></p>
 
@@ -241,7 +300,7 @@
         </div>
       </section>
 
-      <section class="card">
+      <section class="card" data-step="3">
         <h2><span class="step">3</span> <span data-i18n="step3"></span></h2>
         <label class="field" style="max-width:400px;"><span data-i18n="wifiLabel"></span>
           <select id="wifiMode">
@@ -293,7 +352,7 @@
         </div>
       </section>
 
-      <section class="card">
+      <section class="card" data-step="4">
         <h2><span class="step">4</span> <span data-i18n="step4"></span></h2>
         <div class="grid2">
           <label class="field"><span data-i18n="localeLabel"></span>
@@ -314,11 +373,17 @@
         <p class="hint" data-i18n="optionsHint"></p>
       </section>
 
-      <section class="card">
+      <section class="card" data-step="5">
         <h2><span class="step">5</span> <span data-i18n="step5"></span></h2>
         <textarea id="payload" spellcheck="false"></textarea>
         <p class="hint" id="payloadHint"></p>
       </section>
+
+      <div class="wizard-nav">
+        <button class="btn" id="prevStepBtn" data-i18n="navBack"></button>
+        <span class="wizard-nav__count" id="stepCount"></span>
+        <button class="btn btn--primary" id="nextStepBtn" data-i18n="navNext"></button>
+      </div>
 
       <section class="card">
         <details class="about">
@@ -371,29 +436,6 @@
         </details>
       </section>
 
-      <section class="card">
-        <details class="about">
-          <summary>About this tool <span class="en-only">— English only</span></summary>
-          <p>
-            Free, no account, no install. Everything happens in your browser: no analytics, no external
-            requests, no server side. Reading the source of this page is enough to confirm that, and the page
-            keeps working after you save it to disk.
-          </p>
-          <p>
-            The idea comes from
-            <a href="https://wssyd.github.io/ws1-android-qr-helper/" rel="noopener">ws1-android-qr-helper</a>,
-            which does the same job for Workspace ONE. This one adds Android Management API enrollment tokens,
-            leaves WiFi to the device by default, reads enrollment links from the console, and speaks five
-            languages.
-          </p>
-          <p>
-            It comes from <a href="https://github.com/franekSoftSF/WS1QRGen" rel="noopener">WSO QR</a>, a
-            self-hosted companion for Workspace ONE UEM: bulk enrollment from CSV, day-2 device actions,
-            migration between UEM consoles with a self-service portal, and automatic email notifications.
-            This page covers a single device at a time — the rest is what the installable application is for.
-          </p>
-        </details>
-      </section>
     </div>
 
     <aside class="card">
@@ -414,11 +456,21 @@
   </div>
 
   <footer>
-    <a href="https://github.com/franekSoftSF/WS1QRGen" rel="noopener">WSO QR</a> —
-    bulk Android enrollment, day-2 device actions and migration between UEM consoles.<br>
-    Inspired by <a href="https://wssyd.github.io/ws1-android-qr-helper/" rel="noopener">ws1-android-qr-helper</a>.
-    QR rendering by <a href="https://github.com/soldair/node-qrcode" rel="noopener">node-qrcode</a> (MIT), bundled with this page.
-    Apache 2.0.
+    <p style="margin:0 0 6px;">
+      <a href="https://www.linkedin.com/in/szymon-frankiewicz-8ba881106/" rel="noopener">Szymon Frankiewicz</a>
+      ·
+      <a href="https://community.omnissa.com/" rel="noopener">Omnissa Community</a>
+      · <strong>#WeAreOmnissa</strong>
+    </p>
+    <p style="margin:0 0 6px;">
+      <a href="https://github.com/franekSoftSF/WS1QRGen" rel="noopener">WSO QR</a> —
+      bulk Android enrollment, day-2 device actions and migration between UEM consoles.
+    </p>
+    <p style="margin:0;">
+      Inspired by <a href="https://wssyd.github.io/ws1-android-qr-helper/" rel="noopener">ws1-android-qr-helper</a>.
+      QR rendering by <a href="https://github.com/soldair/node-qrcode" rel="noopener">node-qrcode</a> (MIT), bundled with this page.
+      Apache 2.0 · <a href="https://github.com/franekSoftSF/WSOQRGenerator" rel="noopener">source</a>
+    </p>
   </footer>
 </div>
 
@@ -435,6 +487,7 @@
 </div>
 
 <script src="qrcode.min.js"></script>
+<script src="jsqr.min.js"></script>
 <script src="data.js"></script>
 <script src="i18n.js"></script>
 <script>
@@ -503,6 +556,7 @@
     // Strings that depend on current state, not just on the language.
     syncVisibility();
     renderFromPayloadBox();
+    if (typeof currentStep === 'number') { showStep(currentStep); }
   }
 
   function initLanguage() {
@@ -529,32 +583,122 @@
     });
   }
 
-  // Accepts the enrollment link a console hands out, e.g.
-  // https://getwsone.com?serverurl=wso.acme.com&gid=KW4OM9 - and anything else carrying the same
-  // two parameters. Parsed with the browser's own URL parser, so no guessing at formats.
-  function readEnrollmentUrl() {
-    var raw = trimmed('enrollmentUrl');
-    var hint = $('urlHint');
+  function sayScan(message, cls) {
+    $('urlHint').textContent = message;
+    $('urlHint').className = 'hint' + (cls ? ' ' + cls : '');
+  }
 
-    function say(message, cls) { hint.textContent = message; hint.className = 'hint ' + cls; }
+  // What a console gives you is a QR code on screen, not a link you can copy - so the input here
+  // is the code itself: an image dropped, picked, or pasted straight from a screenshot.
+  function decodeImageFile(file) {
+    if (!file) { return; }
+    sayScan(t('scanWorking'));
 
-    if (!raw) { say(t('urlEmpty'), 'hint--warn'); return; }
+    var reader = new FileReader();
+    reader.onload = function () {
+      var image = new Image();
+      image.onload = function () {
+        var canvas = document.createElement('canvas');
+        canvas.width = image.naturalWidth;
+        canvas.height = image.naturalHeight;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(image, 0, 0);
 
-    var url;
-    try { url = new URL(raw.indexOf('://') === -1 ? 'https://' + raw : raw); }
-    catch (e) { say(t('urlBad'), 'hint--warn'); return; }
+        function read(source) {
+          try {
+            var c = source.getContext('2d');
+            var px = c.getImageData(0, 0, source.width, source.height);
+            return window.jsQR(px.data, px.width, px.height);
+          } catch (e) { return null; }
+        }
 
-    var params = url.searchParams;
-    var server = params.get('serverurl') || params.get('serverUrl') || params.get('server');
-    var gid = params.get('gid') || params.get('groupid') || params.get('groupId');
+        var decoded = read(canvas);
 
-    if (!server && !gid) { say(t('urlNoParams'), 'hint--warn'); return; }
+        // A dense code in a small screenshot lands below the roughly 3 pixels per module the
+        // decoder needs. Scaling up adds no information, but it does give the grid detector
+        // something to lock onto - and it costs one redraw, only on the path that already failed.
+        if (!decoded && canvas.width < 900) {
+          var scale = Math.ceil(900 / canvas.width);
+          var big = document.createElement('canvas');
+          big.width = canvas.width * scale;
+          big.height = canvas.height * scale;
+          var bigCtx = big.getContext('2d');
+          bigCtx.imageSmoothingEnabled = false;
+          bigCtx.drawImage(canvas, 0, 0, big.width, big.height);
+          decoded = read(big);
+        }
 
-    if (server) { $('serverUrl').value = server; }
-    if (gid) { $('groupId').value = gid; }
+        if (!decoded || !decoded.data) { sayScan(t('scanNothing'), 'hint--warn'); return; }
+        applyDecoded(decoded.data);
+      };
+      image.onerror = function () { sayScan(t('scanNotImage'), 'hint--warn'); };
+      image.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  }
 
-    say(t('urlOk') + ' ' + [server, gid].filter(Boolean).join(' · '), 'hint--ok');
-    refreshFromFields();
+  // Three things can come out of a scanned code, in order of usefulness: a whole provisioning
+  // payload (then everything is taken over), an enrollment link carrying serverurl/gid, or
+  // something else entirely - worth showing rather than silently ignoring.
+  function applyDecoded(text) {
+    var payload = null;
+    try { payload = JSON.parse(text); } catch (e) { payload = null; }
+
+    if (payload && typeof payload === 'object' &&
+        payload['android.app.extra.PROVISIONING_DEVICE_ADMIN_COMPONENT_NAME']) {
+      var bundle = payload['android.app.extra.PROVISIONING_ADMIN_EXTRAS_BUNDLE'] || {};
+      var isAmapiPayload = Object.keys(bundle).some(function (k) { return k.indexOf('clouddpc') !== -1; });
+
+      if (isAmapiPayload) {
+        document.querySelector('input[name="mode"][value="amapi"]').checked = true;
+        document.querySelector('input[name="amapiInput"][value="json"]').checked = true;
+        $('amapiJson').value = JSON.stringify(payload, null, 2);
+      } else {
+        document.querySelector('input[name="mode"][value="ws1"]').checked = true;
+        if (bundle.serverurl) { $('serverUrl').value = bundle.serverurl; }
+        if (bundle.gid) { $('groupId').value = bundle.gid; }
+        if (bundle.un) { $('username').value = bundle.un; }
+        if (bundle.pw) { $('password').value = bundle.pw; }
+        if (bundle.useUEMAuthentication !== undefined) { $('useUemAuth').checked = String(bundle.useUEMAuthentication) === 'true'; }
+        if (bundle.enable3rdPartyCookiesInVIDM !== undefined) { $('thirdPartyCookies').checked = String(bundle.enable3rdPartyCookiesInVIDM) === 'true'; }
+      }
+
+      if (payload['android.app.extra.PROVISIONING_LOCALE']) { $('locale').value = payload['android.app.extra.PROVISIONING_LOCALE']; }
+      if (payload['android.app.extra.PROVISIONING_TIME_ZONE']) { $('timeZone').value = payload['android.app.extra.PROVISIONING_TIME_ZONE']; }
+      $('leaveSystemApps').checked = payload['android.app.extra.PROVISIONING_LEAVE_ALL_SYSTEM_APPS_ENABLED'] === true;
+      $('skipEncryption').checked = payload['android.app.extra.PROVISIONING_SKIP_ENCRYPTION'] === true;
+
+      // WiFi from a scanned code is taken over as well - if it was in there, it stays in there.
+      if (payload['android.app.extra.PROVISIONING_WIFI_SSID']) {
+        $('wifiMode').value = 'qr';
+        $('wifiSsid').value = payload['android.app.extra.PROVISIONING_WIFI_SSID'];
+        if (payload['android.app.extra.PROVISIONING_WIFI_PASSWORD']) { $('wifiPassword').value = payload['android.app.extra.PROVISIONING_WIFI_PASSWORD']; }
+        if (payload['android.app.extra.PROVISIONING_WIFI_SECURITY_TYPE']) { $('wifiSecurity').value = payload['android.app.extra.PROVISIONING_WIFI_SECURITY_TYPE']; }
+      }
+
+      sayScan(t('scanPayload'), 'hint--ok');
+      syncVisibility();
+      refreshFromFields();
+      return;
+    }
+
+    var url = null;
+    try { url = new URL(text.indexOf('://') === -1 ? 'https://' + text : text); } catch (e) { url = null; }
+
+    if (url) {
+      var params = url.searchParams;
+      var server = params.get('serverurl') || params.get('serverUrl') || params.get('server');
+      var gid = params.get('gid') || params.get('groupid') || params.get('groupId');
+      if (server || gid) {
+        if (server) { $('serverUrl').value = server; }
+        if (gid) { $('groupId').value = gid; }
+        sayScan(t('scanUrl') + ' ' + [server, gid].filter(Boolean).join(' · '), 'hint--ok');
+        refreshFromFields();
+        return;
+      }
+    }
+
+    sayScan(t('scanUnknown') + ' ' + text.slice(0, 60), 'hint--warn');
   }
 
   function buildPayload() {
@@ -663,7 +807,9 @@
     catch (e) { fail(t('qrNotJson'), t('payloadInvalid') + ' ' + e.message); return; }
 
     // Compact JSON, exactly like the admin panel - indentation would only make the code denser.
-    QRCode.toCanvas(canvas, JSON.stringify(parsed), { width: 300, margin: 1, errorCorrectionLevel: 'M' }, function (err) {
+    // margin 4 is the quiet zone the QR spec asks for - the admin panel gets away with 1
+    // because its codes are scanned off a screen, but these get printed and re-scanned.
+    QRCode.toCanvas(canvas, JSON.stringify(parsed), { width: 640, margin: 4, errorCorrectionLevel: 'M' }, function (err) {
       if (err) { fail('' + err.message); return; }
       canvas.hidden = false;
       empty.hidden = true;
@@ -676,8 +822,10 @@
 
   function syncVisibility() {
     var isAmapi = mode() === 'amapi';
-    $('ws1Section').hidden = isAmapi;
-    $('amapiSection').hidden = !isAmapi;
+    // Which of the two step-2 cards exists is decided here; whether it is on screen at all is
+    // decided by showStep(), so the two must not fight over the same attribute.
+    $('ws1Section').hidden = isAmapi || currentStep !== 2;
+    $('amapiSection').hidden = !isAmapi || currentStep !== 2;
     $('modeCardWs1').classList.toggle('mode--on', !isAmapi);
     $('modeCardAmapi').classList.toggle('mode--on', isAmapi);
 
@@ -695,8 +843,7 @@
     $('wifiHint').hidden = wifiInQr;
 
     if (!$('urlHint').textContent || $('urlHint').className.indexOf('--') === -1) {
-      $('urlHint').textContent = t('urlHint');
-      $('urlHint').className = 'hint';
+      sayScan(t('scanHintText'));
     }
   }
 
@@ -794,8 +941,32 @@
   );
 
   $('payload').addEventListener('input', function () { if (!suppressRender) { renderFromPayloadBox(); } });
-  $('parseUrlBtn').addEventListener('click', readEnrollmentUrl);
-  $('enrollmentUrl').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); readEnrollmentUrl(); } });
+  $('qrDrop').addEventListener('click', function () { $('qrFile').click(); });
+  $('qrDrop').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('qrFile').click(); }
+  });
+  $('qrDrop').addEventListener('dragover', function (e) { e.preventDefault(); $('qrDrop').classList.add('drop--over'); });
+  $('qrDrop').addEventListener('dragleave', function () { $('qrDrop').classList.remove('drop--over'); });
+  $('qrDrop').addEventListener('drop', function (e) {
+    e.preventDefault();
+    $('qrDrop').classList.remove('drop--over');
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) { decodeImageFile(e.dataTransfer.files[0]); }
+  });
+  $('qrFile').addEventListener('change', function (e) {
+    if (e.target.files && e.target.files[0]) { decodeImageFile(e.target.files[0]); }
+    e.target.value = '';
+  });
+  // A console QR is usually on screen: screenshot, then Ctrl+V straight onto the page.
+  document.addEventListener('paste', function (e) {
+    var items = (e.clipboardData && e.clipboardData.items) || [];
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') === 0) {
+        decodeImageFile(items[i].getAsFile());
+        e.preventDefault();
+        return;
+      }
+    }
+  });
 
   $('downloadBtn').addEventListener('click', function () {
     var link = document.createElement('a');
@@ -834,9 +1005,62 @@
     event.target.value = '';
   });
 
+  // --- Wizard: one step visible at a time -------------------------------------------------
+  // The QR panel deliberately stays outside this: it updates while you type, and hiding it
+  // until the last step would take away the immediate feedback that makes the tool usable.
+  var STEP_KEYS = ['step1', 'step2Ws1', 'step3', 'step4', 'step5'];
+  var currentStep = 1;
+
+  function stepTitle(index) {
+    // Step 2 has two names depending on the enrollment method chosen in step 1.
+    if (index === 2) { return mode() === 'amapi' ? t('step2Amapi') : t('step2Ws1'); }
+    return t(STEP_KEYS[index - 1]);
+  }
+
+  function showStep(index) {
+    currentStep = Math.min(Math.max(index, 1), STEP_KEYS.length);
+
+    Array.prototype.forEach.call(document.querySelectorAll('[data-step]'), function (el) {
+      var belongs = Number(el.getAttribute('data-step')) === currentStep;
+      // The two step-2 cards (Workspace ONE / AMAPI) are also switched by syncVisibility,
+      // so a card only shows when it belongs to this step AND to the chosen method.
+      var wrongMethod = (el.id === 'ws1Section' && mode() === 'amapi') ||
+                        (el.id === 'amapiSection' && mode() !== 'amapi');
+      el.hidden = !belongs || wrongMethod;
+    });
+
+    $('prevStepBtn').disabled = currentStep === 1;
+    $('nextStepBtn').disabled = currentStep === STEP_KEYS.length;
+    $('stepCount').textContent = t('stepCount')
+      .replace('{n}', currentStep).replace('{total}', STEP_KEYS.length);
+
+    renderRail();
+  }
+
+  function renderRail() {
+    var rail = $('rail');
+    rail.innerHTML = '';
+    STEP_KEYS.forEach(function (_, i) {
+      var index = i + 1;
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'rail__item'
+        + (index === currentStep ? ' rail__item--on' : '')
+        + (index < currentStep ? ' rail__item--done' : '');
+      button.innerHTML = '<b>' + index + '</b>';
+      button.appendChild(document.createTextNode(stepTitle(index)));
+      button.addEventListener('click', function () { showStep(index); });
+      rail.appendChild(button);
+    });
+  }
+
+  $('prevStepBtn').addEventListener('click', function () { showStep(currentStep - 1); });
+  $('nextStepBtn').addEventListener('click', function () { showStep(currentStep + 1); });
+
   initLanguage();
   applyLanguage();
   refreshFromFields();
+  showStep(1);
 })();
 </script>
 </body>

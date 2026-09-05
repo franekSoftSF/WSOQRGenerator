@@ -19,9 +19,11 @@ staging account. Two ways to identify the device:
   printed, photographed and passed around, and everything inside it is readable by whoever
   holds it.
 
-**Enrollment URL shortcut** — if your console hands out a link such as
-`https://getwsone.com?serverurl=wso.acme.com&gid=KW4OM9`, paste it in and the server address
-and Group ID fill themselves in.
+**Read an existing QR code** — a console shows the enrollment code on screen rather than as a
+link you can copy, so hand it the code itself: drop an image, pick a file, or paste a
+screenshot with Ctrl+V. A whole provisioning payload is taken over as it is (including WiFi,
+region and options); an enrollment link carrying `serverurl` and `gid` fills in those two
+fields.
 
 **Android Management API** — from an enrollment token, or by pasting the ready-made payload
 your console or `enrollmentTokens.create` returned. In the second case the WiFi, region and
