@@ -815,6 +815,10 @@
       empty.hidden = true;
       $('downloadBtn').disabled = false;
       $('printBtn').disabled = false;
+      // The printed sheet shows an <img>, and the browser will not wait for a picture that
+      // starts loading at print time - that is how the QR came out as an empty frame. Feeding
+      // it here means the image is decoded long before anyone reaches the print button.
+      $('printQr').src = canvas.toDataURL('image/png');
       $('payloadHint').textContent = t('payloadHint');
       $('payloadHint').className = 'hint';
     });
@@ -853,7 +857,8 @@
     var wifiInQr = $('wifiMode').value === 'qr';
     var isAmapi = mode() === 'amapi';
 
-    $('printQr').src = $('qrCanvas').toDataURL('image/png');
+    var current = $('qrCanvas').toDataURL('image/png');
+    if ($('printQr').src !== current) { $('printQr').src = current; }
     $('printIntro').textContent = isAmapi
       ? 'Scan the code below on a factory-reset device to enrol it through the Android Management API.'
       : 'Scan the code below on a factory-reset device to enrol it in Workspace ONE UEM.';
@@ -975,7 +980,20 @@
     link.click();
   });
 
-  $('printBtn').addEventListener('click', function () { buildPrintSheet(); window.print(); });
+  $('printBtn').addEventListener('click', function () {
+    buildPrintSheet();
+
+    var image = $('printQr');
+    // Belt and braces: even with the image fed in at render time, a freshly changed payload
+    // could still be mid-decode. Printing a blank frame is the one outcome worth ruling out.
+    if (image.complete && image.naturalWidth > 0) { window.print(); return; }
+
+    if (image.decode) {
+      image.decode().then(function () { window.print(); }, function () { window.print(); });
+    } else {
+      image.onload = function () { window.print(); };
+    }
+  });
 
   $('saveConfigBtn').addEventListener('click', function () {
     var blob = new Blob([JSON.stringify(currentConfig(), null, 2)], { type: 'application/json' });
