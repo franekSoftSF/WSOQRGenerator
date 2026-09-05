@@ -427,6 +427,21 @@
           <label class="checkbox"><input type="checkbox" id="skipEncryption"> <span data-i18n="skipEncryption"></span></label>
         </div>
         <p class="hint" data-i18n="optionsHint"></p>
+
+        <details class="about" style="margin-top:14px;">
+          <summary data-i18n="dpcAdvanced"></summary>
+          <div style="margin-top:10px;">
+            <div class="grid2">
+              <label class="field"><span data-i18n="dpcDownloadLabel"></span>
+                <input type="text" id="dpcDownload" autocomplete="off" spellcheck="false">
+              </label>
+              <label class="field"><span data-i18n="dpcChecksumLabel"></span>
+                <input type="text" id="dpcChecksum" autocomplete="off" spellcheck="false">
+              </label>
+            </div>
+            <p class="hint" data-i18n="dpcHint"></p>
+          </div>
+        </details>
       </section>
 
       <section class="card" id="qrPanel" hidden>
@@ -589,7 +604,7 @@
 
   var FIELDS = ['serverUrl', 'groupId', 'username', 'password', 'enrollmentToken', 'amapiJson',
     'wifiSsid', 'wifiPassword', 'wifiSecurity', 'wifiMode', 'wifiProxyHost', 'wifiProxyPort',
-    'wifiProxyBypass', 'wifiPacUrl', 'locale', 'timeZone'];
+    'wifiProxyBypass', 'wifiPacUrl', 'locale', 'timeZone', 'dpcDownload', 'dpcChecksum'];
   var FLAGS = ['useUemAuth', 'thirdPartyCookies', 'leaveSystemApps', 'skipEncryption', 'wifiHidden',
     'printSummaryOn'];
 
@@ -749,6 +764,12 @@
         if (bundle.enable3rdPartyCookiesInVIDM !== undefined) { $('thirdPartyCookies').checked = String(bundle.enable3rdPartyCookiesInVIDM) === 'true'; }
       }
 
+      var known = isAmapiPayload ? AMAPI : WS1;
+      var download = payload['android.app.extra.PROVISIONING_DEVICE_ADMIN_PACKAGE_DOWNLOAD_LOCATION'];
+      var checksum = payload['android.app.extra.PROVISIONING_DEVICE_ADMIN_SIGNATURE_CHECKSUM'];
+      $('dpcDownload').value = (download && download !== known.download) ? download : '';
+      $('dpcChecksum').value = (checksum && checksum.trim() !== known.checksum.trim()) ? checksum : '';
+
       if (payload['android.app.extra.PROVISIONING_LOCALE']) { $('locale').value = payload['android.app.extra.PROVISIONING_LOCALE']; }
       if (payload['android.app.extra.PROVISIONING_TIME_ZONE']) { $('timeZone').value = payload['android.app.extra.PROVISIONING_TIME_ZONE']; }
       $('leaveSystemApps').checked = payload['android.app.extra.PROVISIONING_LEAVE_ALL_SYSTEM_APPS_ENABLED'] === true;
@@ -834,6 +855,16 @@
           enable3rdPartyCookiesInVIDM: $('thirdPartyCookies').checked ? 'true' : 'false'
         }
       };
+    }
+
+    // Own build of the agent: the download location, and the signing certificate hash when the
+    // package is signed by someone other than the vendor. Useful for testing a build that is not
+    // on Google Play - and left empty, nothing changes.
+    if (trimmed('dpcDownload')) {
+      payload['android.app.extra.PROVISIONING_DEVICE_ADMIN_PACKAGE_DOWNLOAD_LOCATION'] = trimmed('dpcDownload');
+    }
+    if (trimmed('dpcChecksum')) {
+      payload['android.app.extra.PROVISIONING_DEVICE_ADMIN_SIGNATURE_CHECKSUM'] = trimmed('dpcChecksum');
     }
 
     // Written only when switched ON. Both default to false on the device, so sending false
@@ -1022,6 +1053,10 @@
     $('gidLabel').textContent = byToken ? t('gidLabelToken') : t('gidLabel');
     $('groupId').placeholder = byToken ? '' : 'MY_OG';
     $('credentialsHint').textContent = noDetails ? t('hintNone') : (byToken ? t('hintToken') : t('hintCredentials'));
+
+    var known = isAmapi ? AMAPI : WS1;
+    $('dpcDownload').placeholder = known.download;
+    $('dpcChecksum').placeholder = known.checksum.trim();
 
     var byJson = amapiInput() === 'json';
     $('amapiTokenBox').hidden = byJson;

@@ -53,6 +53,10 @@ settings, when a site genuinely needs it.
   code you generate afterwards. Every rendered code is read back with the decoder this page
   already carries, so a logo that covers too much or a colour too pale is caught here rather
   than on an already-wiped device
+- **Own build of the agent** — the download address the device fetches the DPC from, and the
+  signing certificate hash when that package is signed by someone other than the vendor. Empty
+  means the version on Google Play, so this only ever changes for testing a build that is not
+  in the store
 - **Save and reload everything** as one file — the enrollment fields and the appearance
   (colour, logo and its size) together, so the same file on another machine produces the same
   code
