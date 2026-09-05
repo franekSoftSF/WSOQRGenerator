@@ -96,15 +96,17 @@
      handles them: these get filled in over someone's shoulder in a warehouse office.
      The wrapper must not change the field's own geometry - it is the same box as every other
      input, with the button placed inside it. */
-  .secret { position: relative; display: block; width: 100%; }
-  .secret input { padding-right: 68px; }
+  /* The reveal button sits NEXT TO the field, not inside it. Inside, it competed for the same
+     corner with the key icon a password manager injects, and the two overlapped. */
+  .secret { display: flex; gap: 6px; align-items: stretch; width: 100%; }
+  .secret input { flex: 1 1 auto; min-width: 0; }
   .secret button {
-    position: absolute; right: 1px; top: 1px; bottom: 1px;
-    border: 0; border-radius: 0 5px 5px 0; background: transparent; color: var(--accent);
-    font: inherit; font-size: 12px; padding: 0 10px; cursor: pointer;
+    flex: none; border: 1px solid var(--line); border-radius: 6px; background: var(--surface);
+    color: var(--accent); font: inherit; font-size: 12.5px; padding: 0 10px; cursor: pointer;
   }
-  /* Edge and IE draw their own reveal eye inside password inputs. Left alone, the field ends
-     up with two of them and sits differently from every other field on the page. */
+  .secret button:hover { background: var(--accent-wash); }
+  /* Edge and IE draw their own reveal eye inside password inputs - with the page's own button
+     that made two of them in one field. */
   .secret input::-ms-reveal, .secret input::-ms-clear { display: none; }
 
   .columns { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; align-items: start; }
@@ -973,8 +975,9 @@
     var isAmapi = mode() === 'amapi';
     // Which of the two step-2 cards exists is decided here; whether it is on screen at all is
     // decided by showStep(), so the two must not fight over the same attribute.
-    $('ws1Section').hidden = isAmapi || currentStep !== 3;
-    $('amapiSection').hidden = !isAmapi || currentStep !== 3;
+    var identityCard = 3;
+    $('ws1Section').hidden = isAmapi || cardForStep(currentStep) !== identityCard;
+    $('amapiSection').hidden = !isAmapi || cardForStep(currentStep) !== identityCard;
     $('modeCardWs1').classList.toggle('mode--on', !isAmapi);
     $('modeCardAmapi').classList.toggle('mode--on', isAmapi);
 
@@ -1200,22 +1203,38 @@
   // --- Wizard: one step visible at a time -------------------------------------------------
   // The QR panel deliberately stays outside this: it updates while you type, and hiding it
   // until the last step would take away the immediate feedback that makes the tool usable.
-  // Order on screen: method, network, then who the device says it is. The network decision
-  // shapes the rest - with WiFi left to the device there is nothing more to fill in there.
-  var STEP_KEYS = ['step1', 'step3', 'step2Ws1', 'step4', 'step5'];
+  // Step order differs by enrollment method. For the custom DPC flow the network comes first,
+  // because that decision shapes the rest. For AMAPI the token is the whole point of the
+  // exercise, so it goes ahead of the network.
+  var STEP_ORDER = {
+    ws1: ['step1', 'step3', 'step2Ws1', 'step4', 'step5'],
+    amapi: ['step1', 'step2Amapi', 'step3', 'step4', 'step5']
+  };
+
+  function stepKeys() { return STEP_ORDER[mode() === 'amapi' ? 'amapi' : 'ws1']; }
+
+  // Which card belongs to which position, for the same two orders.
+  var CARD_ORDER = {
+    ws1: [1, 3, 2, 4, 5],
+    amapi: [1, 2, 3, 4, 5]
+  };
+
+  // data-step numbers stay fixed in the markup; this maps a position in the wizard to the
+  // card that belongs there, so the cards never have to be renumbered.
+  function cardForStep(index) {
+    var order = mode() === 'amapi' ? [1, 3, 2, 4, 5] : [1, 2, 3, 4, 5];
+    return order[index - 1];
+  }
   var currentStep = 1;
 
-  function stepTitle(index) {
-    // Step 3 has two names depending on the enrollment method chosen in step 1.
-    if (index === 3) { return mode() === 'amapi' ? t('step2Amapi') : t('step2Ws1'); }
-    return t(STEP_KEYS[index - 1]);
-  }
+  function stepTitle(index) { return t(stepKeys()[index - 1]); }
 
   function showStep(index) {
-    currentStep = Math.min(Math.max(index, 1), STEP_KEYS.length);
+    currentStep = Math.min(Math.max(index, 1), stepKeys().length);
+    var visibleCard = cardForStep(currentStep);
 
     Array.prototype.forEach.call(document.querySelectorAll('[data-step]'), function (el) {
-      var belongs = Number(el.getAttribute('data-step')) === currentStep;
+      var belongs = Number(el.getAttribute('data-step')) === visibleCard;
       // The two step-2 cards (Workspace ONE / AMAPI) are also switched by syncVisibility,
       // so a card only shows when it belongs to this step AND to the chosen method.
       var wrongMethod = (el.id === 'ws1Section' && mode() === 'amapi') ||
@@ -1226,22 +1245,35 @@
     // The QR panel belongs to the last step: before that there is nothing to show but greyed
     // out buttons and an empty frame, which reads as something being broken rather than as
     // something not filled in yet.
-    var onLastStep = currentStep === STEP_KEYS.length;
+    var onLastStep = currentStep === stepKeys().length;
     $('qrPanel').hidden = !onLastStep;
     $('columns').classList.toggle('columns--solo', !onLastStep);
 
     $('prevStepBtn').disabled = currentStep === 1;
     $('nextStepBtn').disabled = onLastStep;
     $('stepCount').textContent = t('stepCount')
-      .replace('{n}', currentStep).replace('{total}', STEP_KEYS.length);
+      .replace('{n}', currentStep).replace('{total}', stepKeys().length);
 
     renderRail();
+    renumberCards();
+  }
+
+  // The badge inside each card shows its position in the wizard, which changes with the
+  // method - the AMAPI token is step two, the network step three.
+  function renumberCards() {
+    var order = mode() === 'amapi' ? [1, 3, 2, 4, 5] : [1, 2, 3, 4, 5];
+    Array.prototype.forEach.call(document.querySelectorAll('[data-step]'), function (el) {
+      var badge = el.querySelector('h2 .step');
+      if (!badge) { return; }
+      var card = Number(el.getAttribute('data-step'));
+      badge.textContent = order.indexOf(card) + 1;
+    });
   }
 
   function renderRail() {
     var rail = $('rail');
     rail.innerHTML = '';
-    STEP_KEYS.forEach(function (_, i) {
+    stepKeys().forEach(function (_, i) {
       var index = i + 1;
       var button = document.createElement('button');
       button.type = 'button';
@@ -1259,20 +1291,22 @@
   // Only the current step is checked - a half-filled step four is not a reason to refuse
   // going back to step one.
   function findProblem(index) {
-    if (index === 2 && $('wifiMode').value === 'qr') {
+    var card = cardForStep(index);
+
+    if (card === 2 && $('wifiMode').value === 'qr') {
       if (!trimmed('wifiSsid')) { return { field: 'wifiSsid', message: t('errSsid') }; }
       if ($('wifiSecurity').value !== 'NONE' && !trimmed('wifiPassword')) {
         return { field: 'wifiPassword', message: t('errWifiPassword') };
       }
     }
 
-    if (index === 3 && mode() !== 'amapi') {
+    if (card === 3 && mode() !== 'amapi') {
       if (!trimmed('serverUrl') || !trimmed('groupId')) {
         return { field: !trimmed('serverUrl') ? 'serverUrl' : 'groupId', message: t('errServer') };
       }
     }
 
-    if (index === 3 && mode() === 'amapi') {
+    if (card === 3 && mode() === 'amapi') {
       if (amapiInput() === 'token' && !trimmed('enrollmentToken')) {
         return { field: 'enrollmentToken', message: t('errToken') };
       }
